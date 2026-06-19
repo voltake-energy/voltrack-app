@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="ms" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VoltTrack - Sistem Pemantauan Kejuruteraan Elektrikal</title>
+
+    <!-- PWA: manifest + meta tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#005b96">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VoltTrack">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          onerror="document.documentElement.classList.add('fa-fallback')">
+    <script>
+        // Fallback check: kalau FontAwesome CDN gagal load (offline / blocked),
+        // tukar guna emoji/symbol supaya button TIDAK nampak kosong/hilang icon.
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const testIcon = document.createElement('i');
+                testIcon.className = 'fa-solid fa-bolt';
+                testIcon.style.position = 'absolute';
+                testIcon.style.left = '-9999px';
+                document.body.appendChild(testIcon);
+                const beforeContent = window.getComputedStyle(testIcon, '::before').content;
+                document.body.removeChild(testIcon);
+                if (!beforeContent || beforeContent === 'none' || beforeContent === '""') {
+                    document.documentElement.classList.add('fa-fallback');
+                }
+            }, 300);
+        });
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        eng: { blue: '#005b96', dark: '#011f4b', light: '#6497b1', b3: '#b3cde0' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        .fade-in { animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .notif-slide { animation: notifSlide 0.3s cubic-bezier(0.16,1,0.3,1); }
+        @keyframes notifSlide { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+
+        .notif-item-in { animation: notifItemIn 0.2s ease-out; }
+        @keyframes notifItemIn { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .badge-pulse { animation: badgePulse 2s infinite; }
+        @keyframes badgePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+        .hidden-view { display: none !important; }
+        input[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
+        .dark input[readonly] { background-color: #1e293b; color: #94a3b8; }
+
+        /* ===== FONTAWESOME FALLBACK ===== */
+        /* Jika CDN FontAwesome gagal load (offline/network blocked), .fa-fallback
+           ditambah pada <html> dan setiap <i class="fa-..."> akan papar emoji
+           gantian supaya button TIDAK nampak kosong/hilang icon. */
+        .fa-fallback i.fa-solid, .fa-fallback i.fa-regular { font-family: inherit !important; font-style: normal; }
+        .fa-fallback i.fa-solid::before, .fa-fallback i.fa-regular::before { content: '•'; }
+        .fa-fallback i.fa-bolt::before { content: '⚡'; }
+        .fa-fallback i.fa-chart-pie::before { content: '📊'; }
+        .fa-fallback i.fa-file-signature::before { content: '📝'; }
+        .fa-fallback i.fa-helmet-safety::before { content: '⛑️'; }
+        .fa-fallback i.fa-file-invoice-dollar::before { content: '💵'; }
+        .fa-fallback i.fa-gavel::before { content: '⚖️'; }
+        .fa-fallback i.fa-moon::before { content: '🌙'; }
+        .fa-fallback i.fa-bell::before { content: '🔔'; }
+        .fa-fallback i.fa-bell-slash::before { content: '🔕'; }
+        .fa-fallback i.fa-xmark::before { content: '✕'; }
+        .fa-fallback i.fa-plus::before { content: '+'; }
+        .fa-fallback i.fa-pen-to-square::before { content: '✏️'; }
+        .fa-fallback i.fa-check::before { content: '✓'; }
+        .fa-fallback i.fa-users::before { content: '👥'; }
+        .fa-fallback i.fa-folder-open::before { content: '📁'; }
+        .fa-fallback i.fa-money-bill-trend-up::before { content: '💹'; }
+        .fa-fallback i.fa-triangle-exclamation::before { content: '⚠️'; }
+        .fa-fallback i.fa-circle-check::before { content: '✅'; }
+        .fa-fallback i.fa-circle-exclamation::before { content: '🚨'; }
+        .fa-fallback i.fa-circle-info::before { content: 'ℹ️'; }
+        .fa-fallback i.fa-clock::before { content: '⏰'; }
+        .fa-fallback i.fa-envelope-open-text::before { content: '✉️'; }
+        .fa-fallback i.fa-user-lock::before { content: '🔒'; }
+        .fa-fallback i.fa-file-lines::before { content: '📄'; }
+        .fa-fallback i.fa-file-check::before { content: '📋'; }
+        .fa-fallback i.fa-download::before { content: '⬇️'; }
+        .fa-fallback i.fa-mobile-screen-button::before { content: '📱'; }
+
+        /* Notification panel */
+        #notif-panel {
+            transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
+        }
+        #notif-panel.hidden { display: none; }
+
+        /* Toast container */
+        #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+        .toast { pointer-events: all; min-width: 280px; max-width: 360px; }
+
+        /* Notif badge */
+        .notif-badge { 
+            position: absolute; top: -4px; right: -4px; 
+            min-width: 18px; height: 18px; padding: 0 4px;
+            background: #ef4444; color: white; font-size: 10px; font-weight: 700;
+            border-radius: 9px; display: flex; align-items: center; justify-content: center;
+            border: 2px solid white;
+        }
+        .dark .notif-badge { border-color: #1e293b; }
+
+        /* Unread dot on notif item */
+        .notif-unread::before {
+            content: '';
+            position: absolute; left: 12px; top: 50%;
+            transform: translateY(-50%);
+            width: 8px; height: 8px;
+            background: #3b82f6; border-radius: 50%;
+        }
+
+        /* Priority colors */
+        .notif-urgent { border-left: 3px solid #ef4444; }
+        .notif-warning { border-left: 3px solid #f59e0b; }
+        .notif-info { border-left: 3px solid #3b82f6; }
+        .notif-success { border-left: 3px solid #10b981; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 h-screen overflow-hidden flex flex-col md:flex-row transition-colors duration-200">
+
+    <!-- Desktop Sidebar -->
+    <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-sm z-20">
+        <div class="p-5 flex items-center gap-3 border-b border-slate-200 dark:border-slate-700">
+            <div class="bg-eng-blue text-white p-2 rounded-lg"><i class="fa-solid fa-bolt"></i></div>
+            <h1 class="font-bold text-lg leading-tight">VoltTrack<br><span class="text-xs text-slate-500 font-normal">Engineering Monitor</span></h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="desktop-nav"></nav>
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
+            <button id="install-btn-desktop" onclick="triggerInstall()" class="hidden items-center gap-3 w-full p-2 text-sm text-eng-blue dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium">
+                <i class="fa-solid fa-download w-4 text-center"></i> <span>Pasang sebagai App</span>
+            </button>
+            <button id="notif-permission-btn" onclick="requestNotifPermission()" class="hidden items-center gap-3 w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors font-medium">
+                <i class="fa-solid fa-bell w-4 text-center"></i> <span>Aktifkan Notifikasi</span>
+            </button>
+            <button id="theme-toggle-desktop" class="flex items-center gap-3 w-full p-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <i class="fa-solid fa-moon w-4 text-center"></i> <span>Tukar Tema</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+        <!-- Top Header -->
+        <header class="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm z-20">
+            <div class="flex items-center gap-2 md:hidden">
+                <div class="bg-eng-blue text-white p-1.5 rounded-lg text-sm"><i class="fa-solid fa-bolt"></i></div>
+                <h1 class="font-bold text-md">VoltTrack</h1>
+            </div>
+            <div class="hidden md:block text-sm text-slate-500 dark:text-slate-400" id="breadcrumb">Dashboard</div>
+            <div class="flex items-center gap-2">
+                <!-- Install App Button (muncul bila browser sokong PWA install) -->
+                <button id="install-btn" onclick="triggerInstall()" class="hidden items-center gap-2 bg-eng-blue text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">Install App</span>
+                </button>
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button id="notif-btn" onclick="toggleNotifPanel()" class="relative p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notif-badge" class="notif-badge badge-pulse hidden">0</span>
+                    </button>
+                </div>
+                <button id="theme-toggle-mobile" class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Notification Panel (Dropdown) -->
+        <div id="notif-panel" class="hidden absolute top-14 right-0 md:right-4 w-full md:w-96 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-40 flex flex-col max-h-[75vh]">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bell text-eng-blue"></i>
+                    <h3 class="font-bold text-slate-800 dark:text-white">Notifikasi</h3>
+                    <span id="notif-count-badge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="markAllRead()" class="text-xs text-blue-500 hover:text-blue-700 font-medium px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors">Tandai Semua Baca</button>
+                    <button onclick="clearAllNotifs()" class="text-xs text-slate-400 hover:text-red-500 font-medium px-2 py-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors">Padam Semua</button>
+                </div>
+            </div>
+            <!-- Filter tabs -->
+            <div class="flex gap-1 p-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
+                <button onclick="filterNotifs('all')" id="tab-all" class="notif-tab active text-xs px-3 py-1.5 rounded-md font-medium transition-colors bg-eng-blue text-white">Semua</button>
+                <button onclick="filterNotifs('operation')" id="tab-operation" class="notif-tab text-xs px-3 py-1.5 rounded-md font-medium transition-colors text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">Operation</button>
+                <button onclick="filterNotifs('claim')" id="tab-claim" class="notif-tab text-xs px-3 py-1.5 rounded-md font-medium transition-colors text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">Claim</button>
+                <button onclick="filterNotifs('lod')" id="tab-lod" class="notif-tab text-xs px-3 py-1.5 rounded-md font-medium transition-colors text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">LOD</button>
+            </div>
+            <div id="notif-list" class="overflow-y-auto flex-1">
+                <div class="p-8 text-center text-slate-400" id="notif-empty">
+                    <i class="fa-solid fa-bell-slash text-3xl mb-2 block opacity-30"></i>
+                    <p class="text-sm">Tiada notifikasi</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
+        <!-- iOS Manual Install Banner (Safari tak sokong auto-install prompt) -->
+        <div id="ios-install-banner" class="hidden fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-slate-800 dark:bg-slate-700 text-white rounded-xl shadow-2xl p-4 z-40 notif-slide">
+            <div class="flex items-start gap-3">
+                <div class="bg-eng-blue p-2 rounded-lg flex-shrink-0"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold mb-1">Pasang VoltTrack di iPhone</p>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Tekan butang <strong>Share</strong> <i class="fa-solid fa-square-up-right"></i> di Safari,
+                        kemudian pilih <strong>"Add to Home Screen"</strong>.
+                    </p>
+                </div>
+                <button onclick="dismissIosBanner()" class="text-slate-400 hover:text-white flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+        <!-- Dynamic Content -->
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 fade-in relative"></div>
+    </main>
+
+    <!-- Mobile Bottom Tab Bar -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around p-2 pb-safe z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" id="mobile-nav"></nav>
+
+    <!-- Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-3xl rounded-xl shadow-2xl flex flex-col max-h-[90vh] fade-in">
+            <div class="flex justify-between items-center p-5 border-b border-slate-200 dark:border-slate-700">
+                <h2 id="modal-title" class="font-bold text-xl text-slate-800 dark:text-white">Borang</h2>
+                <button id="modal-close" class="text-slate-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1" id="modal-body"></div>
+            <div class="p-5 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-b-xl">
+                <button id="modal-cancel" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600">Batal</button>
+                <button id="modal-save" class="px-6 py-2 text-sm font-medium text-white bg-eng-blue rounded-lg hover:bg-blue-700 shadow-md shadow-blue-500/30">Simpan Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ==========================================
+    // NOTIFICATION ENGINE
+    // ==========================================
+
+    const NOTIF_TYPES = {
+        QUOTATION_APPROVED:   { icon: 'fa-file-check',          color: 'notif-success', category: 'operation', priority: 'success' },
+        OPERATION_PENDING:    { icon: 'fa-helmet-safety',        color: 'notif-info',    category: 'operation', priority: 'info' },
+        PTW_MISSING:          { icon: 'fa-triangle-exclamation', color: 'notif-warning', category: 'operation', priority: 'warning' },
+        GWR_SUBMITTED:        { icon: 'fa-file-lines',           color: 'notif-info',    category: 'claim',     priority: 'info' },
+        FULL_REPORT_DONE:     { icon: 'fa-circle-check',         color: 'notif-success', category: 'claim',     priority: 'success' },
+        INVOICE_MISSING:      { icon: 'fa-file-invoice-dollar',  color: 'notif-warning', category: 'claim',     priority: 'warning' },
+        PAYMENT_DUE_SOON:     { icon: 'fa-clock',                color: 'notif-warning', category: 'claim',     priority: 'warning' },
+        PAYMENT_OVERDUE:      { icon: 'fa-circle-exclamation',   color: 'notif-urgent',  category: 'lod',       priority: 'urgent' },
+        LOD_REMINDER_DUE:     { icon: 'fa-envelope-open-text',   color: 'notif-urgent',  category: 'lod',       priority: 'urgent' },
+        LOD_ISSUE_DUE:        { icon: 'fa-gavel',                color: 'notif-urgent',  category: 'lod',       priority: 'urgent' },
+        CTOS_ACTION_NEEDED:   { icon: 'fa-user-lock',            color: 'notif-urgent',  category: 'lod',       priority: 'urgent' },
+    };
+
+    let notifications = [];
+    let notifFilter = 'all';
+    let notifPanelOpen = false;
+
+    const generateNotifId = () => `notif-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
+
+    // Generate notifications berdasarkan state projek
+    const generateProjectNotifications = () => {
+        const today = getToday();
+        const newNotifs = [];
+
+        projects.forEach(p => {
+            const projectLabel = `[${p.id}] ${p.company}`;
+
+            // 1. COMMERCIAL → OPERATION
+            if (p.status_quotation === 'Approved' && !p.date_start_job) {
+                newNotifs.push({
+                    type: 'OPERATION_PENDING',
+                    projectId: p.id,
+                    message: `${projectLabel} — Quotation diluluskan. Sila tetapkan tarikh mula kerja.`,
+                    detail: `Date Proceed: ${p.date_proceed || '-'}. Pastikan MOS, JSA & PTW lengkap sebelum mula.`,
+                    action: () => openForm('operation', p.id),
+                    actionLabel: 'Isi Operation',
+                    timestamp: p.date_proceed || today,
+                });
+            }
+
+            // 2. PTW belum ready tapi dah ada tarikh mula
+            if (p.status_quotation === 'Approved' && p.date_start_job && p.ptw_ready === 'Belum') {
+                newNotifs.push({
+                    type: 'PTW_MISSING',
+                    projectId: p.id,
+                    message: `${projectLabel} — PTW masih belum sedia!`,
+                    detail: `Kerja dijadualkan mula ${p.date_start_job}. PTW wajib selesai sebelum mula kerja di tapak.`,
+                    action: () => openForm('operation', p.id),
+                    actionLabel: 'Kemaskini Operation',
+                    timestamp: today,
+                });
+            }
+
+            // 3. OPERATION → CLAIM (GWR submitted)
+            if (p.gwr_submitted === 'Yes' && p.full_report_submitted !== 'Yes') {
+                newNotifs.push({
+                    type: 'GWR_SUBMITTED',
+                    projectId: p.id,
+                    message: `${projectLabel} — GWR telah dihantar. Full Report boleh disediakan.`,
+                    detail: `GWR Date: ${p.gwr_date}. Sila lengkapkan Full Report untuk ke fasa Claim.`,
+                    action: () => openForm('operation', p.id),
+                    actionLabel: 'Kemaskini Operation',
+                    timestamp: p.gwr_date || today,
+                });
+            }
+
+            // 4. Full Report siap → boleh buat invoice
+            if (p.full_report_submitted === 'Yes' && !p.invoice_no) {
+                newNotifs.push({
+                    type: 'INVOICE_MISSING',
+                    projectId: p.id,
+                    message: `${projectLabel} — Full Report siap! Sila jana Invoice sekarang.`,
+                    detail: `Report Date: ${p.full_report_date}. Invoice perlu dihantar dalam 7 hari dari tarikh report.`,
+                    action: () => openForm('claim', p.id),
+                    actionLabel: 'Isi Claim',
+                    timestamp: p.full_report_date || today,
+                });
+            }
+
+            // 5. Full Report siap + invoice ada tapi payment pending
+            if (p.full_report_submitted === 'Yes' && p.invoice_no && p.payment_status === 'Pending') {
+                newNotifs.push({
+                    type: 'FULL_REPORT_DONE',
+                    projectId: p.id,
+                    message: `${projectLabel} — Invoice ${p.invoice_no} sedang menunggu pembayaran.`,
+                    detail: `Due Date: ${p.payment_due_date || 'Belum ditetapkan'}. Pantau status pembayaran klien.`,
+                    action: () => { switchView('claim'); },
+                    actionLabel: 'Lihat Claim',
+                    timestamp: p.invoice_date || today,
+                });
+            }
+
+            // 6. Payment due dalam 7 hari
+            if (p.payment_due_date && p.payment_status === 'Pending') {
+                const daysLeft = calculateDaysBetween(today, p.payment_due_date);
+                if (daysLeft >= 0 && daysLeft <= 7) {
+                    newNotifs.push({
+                        type: 'PAYMENT_DUE_SOON',
+                        projectId: p.id,
+                        message: `${projectLabel} — Pembayaran akan luput dalam ${daysLeft} hari!`,
+                        detail: `Due Date: ${p.payment_due_date}. Invoice: ${p.invoice_no}. Hantar peringatan kepada klien segera.`,
+                        action: () => openForm('claim', p.id),
+                        actionLabel: 'Kemaskini Claim',
+                        timestamp: today,
+                    });
+                }
+            }
+
+            // 7. Payment OVERDUE → ke LOD
+            if (p.payment_status === 'Outstanding' && p.overdue_days > 0) {
+                newNotifs.push({
+                    type: 'PAYMENT_OVERDUE',
+                    projectId: p.id,
+                    message: `${projectLabel} — TERTUNGGAK ${p.overdue_days} HARI! Tindakan LOD diperlukan.`,
+                    detail: `Due Date: ${p.payment_due_date}. Nilai: ${formatRM(p.quotation_amount)}. Mulakan proses LOD segera.`,
+                    action: () => openForm('lod', p.id),
+                    actionLabel: 'Buka LOD Tracker',
+                    timestamp: today,
+                });
+            }
+
+            // 8. LOD Reminder patut dihantar
+            if (p.payment_status === 'Outstanding' && p.lod_reminder_sent && !p.lod_reminder_date) {
+                const reminderDue = calculateDaysBetween(p.lod_reminder_sent, today);
+                if (reminderDue >= 0) {
+                    newNotifs.push({
+                        type: 'LOD_REMINDER_DUE',
+                        projectId: p.id,
+                        message: `${projectLabel} — LOD Reminder Letter perlu dihantar hari ini!`,
+                        detail: `Tarikh sasaran LOD Reminder: ${p.lod_reminder_sent}. Rekodkan tarikh penghantaran sebenar.`,
+                        action: () => openForm('lod', p.id),
+                        actionLabel: 'Rekod LOD',
+                        timestamp: today,
+                    });
+                }
+            }
+
+            // 9. LOD Issue patut dikeluarkan
+            if (p.payment_status === 'Outstanding' && p.lod_issue && !p.lod_issue_date) {
+                const lodIssueDue = calculateDaysBetween(p.lod_issue, today);
+                if (lodIssueDue >= 0) {
+                    newNotifs.push({
+                        type: 'LOD_ISSUE_DUE',
+                        projectId: p.id,
+                        message: `${projectLabel} — Masa keluarkan Surat LOD Rasmi!`,
+                        detail: `Tarikh sasaran: ${p.lod_issue}. Jika tiada respons selepas reminder, LOD rasmi mesti dikeluarkan.`,
+                        action: () => openForm('lod', p.id),
+                        actionLabel: 'Keluarkan LOD',
+                        timestamp: today,
+                    });
+                }
+            }
+
+            // 10. CTOS Action needed (overdue > 30 hari)
+            if (p.payment_status === 'Outstanding' && p.overdue_days > 30 && (!p.ctos_action || p.ctos_action === 'Pending')) {
+                newNotifs.push({
+                    type: 'CTOS_ACTION_NEEDED',
+                    projectId: p.id,
+                    message: `${projectLabel} — KRITIKAL! Pertimbangkan tindakan CTOS & Undang-undang.`,
+                    detail: `Tertunggak ${p.overdue_days} hari. LOD sudah melebihi tempoh. Sila berbincang dengan peguam / perunding kewangan.`,
+                    action: () => openForm('lod', p.id),
+                    actionLabel: 'Update Status LOD',
+                    timestamp: today,
+                });
+            }
+        });
+
+        // Merge: kekalkan read-status dari notif lama
+        const existingIds = new Set(notifications.map(n => `${n.type}-${n.projectId}`));
+        
+        // Build fresh list, preserve read status
+        const readMap = {};
+        notifications.forEach(n => { readMap[`${n.type}-${n.projectId}`] = n.read; });
+
+        notifications = newNotifs.map(n => {
+            const key = `${n.type}-${n.projectId}`;
+            return {
+                ...n,
+                id: generateNotifId(),
+                read: readMap[key] !== undefined ? readMap[key] : false,
+            };
+        });
+
+        // Sort: unread first, then by priority
+        const priorityOrder = { urgent: 0, warning: 1, info: 2, success: 3 };
+        notifications.sort((a, b) => {
+            if (!a.read && b.read) return -1;
+            if (a.read && !b.read) return 1;
+            const pa = priorityOrder[NOTIF_TYPES[a.type]?.priority] ?? 9;
+            const pb = priorityOrder[NOTIF_TYPES[b.type]?.priority] ?? 9;
+            return pa - pb;
+        });
+    };
+
+    const getUnreadCount = () => notifications.filter(n => !n.read).length;
+
+    const updateNotifBadge = () => {
+        const count = getUnreadCount();
+        const badge = document.getElementById('notif-badge');
+        const countBadge = document.getElementById('notif-count-badge');
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+            countBadge.textContent = count;
+            countBadge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+            countBadge.classList.add('hidden');
+        }
+        // Also update mobile nav notif indicators
+        renderNotifPanel();
+    };
+
+    const toggleNotifPanel = () => {
+        const panel = document.getElementById('notif-panel');
+        notifPanelOpen = !notifPanelOpen;
+        if (notifPanelOpen) {
+            panel.classList.remove('hidden');
+            renderNotifPanel();
+        } else {
+            panel.classList.add('hidden');
+        }
+    };
+
+    const filterNotifs = (category) => {
+        notifFilter = category;
+        document.querySelectorAll('.notif-tab').forEach(t => {
+            t.classList.remove('bg-eng-blue', 'text-white');
+            t.classList.add('text-slate-500', 'hover:bg-slate-200', 'dark:hover:bg-slate-700');
+        });
+        const activeTab = document.getElementById(`tab-${category}`);
+        if (activeTab) {
+            activeTab.classList.add('bg-eng-blue', 'text-white');
+            activeTab.classList.remove('text-slate-500', 'hover:bg-slate-200', 'dark:hover:bg-slate-700');
+        }
+        renderNotifPanel();
+    };
+
+    const renderNotifPanel = () => {
+        const list = document.getElementById('notif-list');
+        const empty = document.getElementById('notif-empty');
+
+        const filtered = notifFilter === 'all'
+            ? notifications
+            : notifications.filter(n => NOTIF_TYPES[n.type]?.category === notifFilter);
+
+        if (filtered.length === 0) {
+            list.innerHTML = `
+                <div class="p-8 text-center text-slate-400">
+                    <i class="fa-solid fa-bell-slash text-3xl mb-2 block opacity-30"></i>
+                    <p class="text-sm">Tiada notifikasi untuk kategori ini</p>
+                </div>`;
+            return;
+        }
+
+        list.innerHTML = filtered.map(n => {
+            const meta = NOTIF_TYPES[n.type] || {};
+            const priorityColors = {
+                urgent: 'bg-red-50 dark:bg-red-900/10',
+                warning: 'bg-amber-50 dark:bg-amber-900/10',
+                info: 'bg-blue-50 dark:bg-blue-900/10',
+                success: 'bg-emerald-50 dark:bg-emerald-900/10',
+            };
+            const iconColors = {
+                urgent: 'text-red-500 bg-red-100 dark:bg-red-900/30',
+                warning: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
+                info: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
+                success: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30',
+            };
+            const bgClass = n.read ? 'bg-white dark:bg-slate-800' : (priorityColors[meta.priority] || 'bg-white dark:bg-slate-800');
+            const iconClass = iconColors[meta.priority] || 'text-slate-500 bg-slate-100 dark:bg-slate-700';
+
+            return `
+                <div class="relative p-4 border-b border-slate-100 dark:border-slate-700/50 ${bgClass} ${meta.color} hover:brightness-[0.97] transition-all cursor-pointer notif-item-in ${n.read ? '' : 'notif-unread pl-7'}"
+                     onclick="handleNotifClick('${n.id}')">
+                    <div class="flex gap-3">
+                        <div class="flex-shrink-0 w-9 h-9 rounded-full ${iconClass} flex items-center justify-center">
+                            <i class="fa-solid ${meta.icon} text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug ${n.read ? 'font-normal' : ''}">${n.message}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${n.detail}</p>
+                            <div class="flex items-center justify-between mt-2">
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500">${n.timestamp}</span>
+                                <button onclick="event.stopPropagation(); handleNotifAction('${n.id}')" 
+                                        class="text-xs font-semibold text-eng-blue dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
+                                    ${n.actionLabel} →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const handleNotifClick = (id) => {
+        const n = notifications.find(x => x.id === id);
+        if (n) {
+            n.read = true;
+            updateNotifBadge();
+        }
+    };
+
+    const handleNotifAction = (id) => {
+        const n = notifications.find(x => x.id === id);
+        if (n) {
+            n.read = true;
+            toggleNotifPanel();
+            if (n.action) n.action();
+            updateNotifBadge();
+        }
+    };
+
+    const markAllRead = () => {
+        notifications.forEach(n => n.read = true);
+        updateNotifBadge();
+        renderNotifPanel();
+    };
+
+    const clearAllNotifs = () => {
+        notifications = [];
+        updateNotifBadge();
+        renderNotifPanel();
+    };
+
+    // Show toast notification
+    const showToast = (message, type = 'info', actionLabel = null, actionFn = null) => {
+        const toastId = `toast-${Date.now()}`;
+        const colors = {
+            urgent: 'bg-red-600 border-red-700',
+            warning: 'bg-amber-500 border-amber-600',
+            info: 'bg-blue-600 border-blue-700',
+            success: 'bg-emerald-600 border-emerald-700',
+        };
+        const icons = {
+            urgent: 'fa-circle-exclamation',
+            warning: 'fa-triangle-exclamation',
+            info: 'fa-circle-info',
+            success: 'fa-circle-check',
+        };
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `toast notif-slide rounded-xl shadow-2xl text-white text-sm overflow-hidden border ${colors[type] || colors.info}`;
+        toast.innerHTML = `
+            <div class="flex items-start gap-3 p-3.5">
+                <i class="fa-solid ${icons[type] || icons.info} text-base mt-0.5 flex-shrink-0"></i>
+                <div class="flex-1">
+                    <p class="font-semibold leading-snug">${message}</p>
+                    ${actionLabel ? `<button onclick="${actionFn ? 'event.stopPropagation()' : ''}" class="mt-1 text-xs underline opacity-90 hover:opacity-100">${actionLabel}</button>` : ''}
+                </div>
+                <button onclick="document.getElementById('${toastId}').remove()" class="opacity-70 hover:opacity-100 flex-shrink-0">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="h-1 bg-white/30">
+                <div class="h-full bg-white/60 animate-[shrink_5s_linear_forwards]" style="animation: width 5s linear forwards; width: 100%;"></div>
+            </div>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (document.getElementById(toastId)) {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 5000);
+    };
+
+    // Auto-show toasts for new urgent/warning notifs
+    let lastNotifSnapshot = '';
+    const checkNewNotifs = () => {
+        const snapshot = JSON.stringify(notifications.map(n => `${n.type}-${n.projectId}`));
+        if (snapshot !== lastNotifSnapshot) {
+            const urgentNew = notifications.filter(n => !n.read && (NOTIF_TYPES[n.type]?.priority === 'urgent' || NOTIF_TYPES[n.type]?.priority === 'warning'));
+            if (urgentNew.length > 0 && lastNotifSnapshot !== '') {
+                const first = urgentNew[0];
+                showToast(first.message, NOTIF_TYPES[first.type]?.priority || 'info');
+            }
+            lastNotifSnapshot = snapshot;
+        }
+    };
+
+    // ==========================================
+    // STATE & DATA
+    // ==========================================
+    let projects = [
+        { id: "EL-2026-001", company: "Tenaga Nasional Bhd", date_request: "2026-05-10", quotation_no: "QT-26-101", quotation_amount: 150000, status_quotation: "Approved", date_proceed: "2026-05-15", mos_ready: "Sedia", jsa_ready: "Sedia", ptw_ready: "Sedia", date_start_job: "2026-05-20", date_completed_job: "2026-06-05", gwr_submitted: "Yes", gwr_date: "2026-06-06", full_report_submitted: "Yes", full_report_date: "2026-06-10", status_job: "Completed Full Report", invoice_no: "INV-26-055", invoice_date: "2026-06-12", presentation_date: "", followup_1: "2026-06-19", followup_2: "2026-06-26", followup_3: "2026-07-03", payment_due_date: "2026-07-12", payment_status: "Pending" },
+        { id: "EL-2026-002", company: "Petronas Carigali", date_request: "2026-05-20", quotation_no: "QT-26-105", quotation_amount: 320000, status_quotation: "Approved", date_proceed: "2026-05-25", mos_ready: "Sedia", jsa_ready: "Sedia", ptw_ready: "Belum", date_start_job: "2026-06-01", date_completed_job: "", gwr_submitted: "No", gwr_date: "", full_report_submitted: "No", full_report_date: "", status_job: "In Progress", invoice_no: "", invoice_date: "", presentation_date: "", followup_1: "", followup_2: "", followup_3: "", payment_due_date: "", payment_status: "" },
+        { id: "EL-2026-003", company: "Prasarana Malaysia", date_request: "2026-06-01", quotation_no: "QT-26-112", quotation_amount: 85000, status_quotation: "Pending", date_proceed: "", mos_ready: "", jsa_ready: "", ptw_ready: "", date_start_job: "", date_completed_job: "", gwr_submitted: "", gwr_date: "", full_report_submitted: "", full_report_date: "", status_job: "", invoice_no: "", invoice_date: "", presentation_date: "", followup_1: "", followup_2: "", followup_3: "", payment_due_date: "", payment_status: "" },
+        { id: "EL-2026-004", company: "Telekom Malaysia", date_request: "2026-03-15", quotation_no: "QT-26-045", quotation_amount: 45000, status_quotation: "Approved", date_proceed: "2026-03-20", mos_ready: "Sedia", jsa_ready: "Sedia", ptw_ready: "Sedia", date_start_job: "2026-03-25", date_completed_job: "2026-04-05", gwr_submitted: "Yes", gwr_date: "2026-04-06", full_report_submitted: "Yes", full_report_date: "2026-04-10", status_job: "Completed Full Report", invoice_no: "INV-26-021", invoice_date: "2026-04-12", presentation_date: "2026-04-15", followup_1: "2026-04-19", followup_2: "2026-04-26", followup_3: "2026-05-03", payment_due_date: "2026-05-12", payment_status: "Outstanding", overdue_days: 37, lod_reminder_sent: "2026-05-19", lod_reminder_date: "2026-05-19", lod_issue: "2026-05-26", lod_issue_date: "2026-05-26", ctos_action: "Pending", legal_action: "Pending", case_status: "Open", remark: "Klien janji bayar hujung bulan Jun." }
+    ];
+
+    const views = [
+        { id: 'dashboard',  icon: 'fa-chart-pie',           title: 'Dashboard' },
+        { id: 'commercial', icon: 'fa-file-signature',      title: '1. Commercial' },
+        { id: 'operation',  icon: 'fa-helmet-safety',       title: '2. Operation' },
+        { id: 'claim',      icon: 'fa-file-invoice-dollar', title: '3. Claim' },
+        { id: 'lod',        icon: 'fa-gavel',               title: '4. LOD Tracker' }
+    ];
+
+    let currentView = 'dashboard';
+    let currentEditingId = null;
+    let chartInstances = {};
+
+    // ==========================================
+    // UTILITY FUNCTIONS
+    // ==========================================
+    const generateId = () => {
+        const year = new Date().getFullYear();
+        const count = projects.length + 1;
+        return `EL-${year}-${count.toString().padStart(3, '0')}`;
+    };
+    const getToday = () => new Date().toISOString().split('T')[0];
+    const addDays = (dateStr, days) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+    };
+    const calculateDaysBetween = (startStr, endStr) => {
+        if (!startStr || !endStr) return 0;
+        const start = new Date(startStr), end = new Date(endStr);
+        return Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    };
+    const formatRM = (amount) => new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(amount || 0);
+
+    const autoUpdateLogic = () => {
+        const today = getToday();
+        projects.forEach(p => {
+            if (p.status_quotation === 'Approved') {
+                if (!p.date_start_job) p.status_job = "Pending Start";
+                else if (p.date_start_job && p.full_report_submitted !== 'Yes') p.status_job = "In Progress";
+                if (p.gwr_submitted === 'Yes' && p.full_report_submitted !== 'Yes') p.status_job = "GWR Submitted";
+                if (p.full_report_submitted === 'Yes') p.status_job = "Completed Full Report";
+            }
+            if (p.payment_due_date && p.payment_status !== 'Paid') {
+                const daysOverdue = calculateDaysBetween(p.payment_due_date, today);
+                if (daysOverdue > 0) {
+                    p.payment_status = 'Outstanding';
+                    p.overdue_days = daysOverdue;
+                    p.lod_reminder_sent = addDays(p.payment_due_date, 7);
+                    p.lod_issue = addDays(p.payment_due_date, 14);
+                    if (daysOverdue >= 7 && !p.lod_reminder_date) p.lod_reminder_date = p.lod_reminder_sent;
+                    if (daysOverdue >= 14 && !p.lod_issue_date) p.lod_issue_date = p.lod_issue;
+                }
+            }
+        });
+        // Refresh notifications
+        generateProjectNotifications();
+        updateNotifBadge();
+        checkNewNotifs();
+        if (typeof dispatchNewUrgentNotifications === 'function') {
+            try { dispatchNewUrgentNotifications(); } catch (e) { /* belum sedia lagi masa load awal */ }
+        }
+    };
+
+    // ==========================================
+    // NAVIGATION COUNTS (notif dots on nav)
+    // ==========================================
+    const getNavNotifCount = (viewId) => {
+        const catMap = { operation: 'operation', claim: 'claim', lod: 'lod' };
+        const cat = catMap[viewId];
+        if (!cat) return 0;
+        return notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.category === cat).length;
+    };
+
+    // ==========================================
+    // NAV INIT
+    // ==========================================
+    const initNav = () => {
+        const desktopNav = document.getElementById('desktop-nav');
+        const mobileNav = document.getElementById('mobile-nav');
+        let dHTML = '', mHTML = '';
+        views.forEach(v => {
+            const isActive = v.id === currentView;
+            const navCount = getNavNotifCount(v.id);
+            const badge = navCount > 0 ? `<span class="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">${navCount}</span>` : '';
+            const mBadge = navCount > 0 ? `<span class="absolute top-0 right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full">${navCount}</span>` : '';
+            dHTML += `
+                <button onclick="switchView('${v.id}')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-eng-blue text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}">
+                    <i class="fa-solid ${v.icon} w-5 text-center"></i>
+                    <span class="font-medium">${v.title}</span>
+                    ${badge}
+                </button>`;
+            mHTML += `
+                <button onclick="switchView('${v.id}')" class="flex flex-col items-center justify-center w-full p-2 relative ${isActive ? 'text-eng-blue dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}">
+                    <i class="fa-solid ${v.icon} text-lg mb-1 ${isActive ? 'scale-110 transition-transform' : ''}"></i>
+                    <span class="text-[10px] font-medium leading-none">${v.title.replace(/[0-9].\s/, '')}</span>
+                    ${mBadge}
+                </button>`;
+        });
+        desktopNav.innerHTML = dHTML;
+        mobileNav.innerHTML = mHTML;
+        document.getElementById('breadcrumb').textContent = views.find(v => v.id === currentView)?.title || '';
+    };
+
+    // ==========================================
+    // VIEW SWITCHING
+    // ==========================================
+    const switchView = (viewId) => {
+        currentView = viewId;
+        autoUpdateLogic();
+        initNav();
+        if (notifPanelOpen) toggleNotifPanel();
+        const content = document.getElementById('content-area');
+        content.innerHTML = '';
+        content.classList.remove('fade-in');
+        void content.offsetWidth;
+        content.classList.add('fade-in');
+        if (viewId === 'dashboard') renderDashboard(content);
+        else renderTable(viewId, content);
+    };
+
+    // ==========================================
+    // DASHBOARD
+    // ==========================================
+    const renderDashboard = (container) => {
+        const totalProj = projects.length;
+        const revTotal = projects.filter(p => p.status_quotation === 'Approved').reduce((s, p) => s + (parseFloat(p.quotation_amount) || 0), 0);
+        const activeOps = projects.filter(p => p.status_quotation === 'Approved' && p.full_report_submitted !== 'Yes');
+        const outstanding = projects.filter(p => p.payment_status === 'Outstanding');
+        const unread = getUnreadCount();
+
+        const clientSummary = {};
+        projects.forEach(p => {
+            const comp = p.company || 'Tiada Nama';
+            if (!clientSummary[comp]) clientSummary[comp] = { count: 0, active: 0 };
+            clientSummary[comp].count++;
+            if (p.status_quotation === 'Approved') clientSummary[comp].active++;
+        });
+        const clientArray = Object.keys(clientSummary).map(company => ({ company, ...clientSummary[company] })).sort((a, b) => b.count - a.count);
+
+        // Notif summary for dashboard
+        const urgentNotifs = notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.priority === 'urgent');
+        const warningNotifs = notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.priority === 'warning');
+
+        container.innerHTML = `
+            <div class="mb-6 flex justify-between items-end flex-wrap gap-3">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Eksekutif Dashboard</h2>
+                    <p class="text-sm text-slate-500">Ringkasan status projek dan kesihatan kewangan</p>
+                </div>
+                ${unread > 0 ? `
+                <button onclick="toggleNotifPanel()" class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                    <i class="fa-solid fa-bell animate-bounce"></i>
+                    <span>${unread} Notifikasi Belum Dibaca</span>
+                </button>` : ''}
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                ${createKPICard('Jumlah Projek', totalProj, 'fa-folder-open', 'border-blue-500')}
+                ${createKPICard('Nilai Lulus', formatRM(revTotal), 'fa-money-bill-trend-up', 'border-emerald-500')}
+                ${createKPICard('Operasi Aktif', activeOps.length, 'fa-helmet-safety', 'border-amber-500')}
+                ${createKPICard('Kes LOD (Tertunggak)', outstanding.length, 'fa-gavel', 'border-red-500')}
+            </div>
+
+            <!-- Notification Summary Section -->
+            ${(urgentNotifs.length > 0 || warningNotifs.length > 0) ? `
+            <div class="mb-6">
+                <h3 class="font-bold text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Perkara Memerlukan Perhatian Segera
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${[...urgentNotifs.slice(0, 4), ...warningNotifs.slice(0, 2)].slice(0, 6).map(n => {
+                        const meta = NOTIF_TYPES[n.type] || {};
+                        const bgMap = { urgent: 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800', warning: 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' };
+                        const iconMap = { urgent: 'text-red-500', warning: 'text-amber-500' };
+                        return `
+                        <div class="flex items-start gap-3 p-3.5 rounded-xl border ${bgMap[meta.priority] || 'bg-slate-50 border-slate-200'} cursor-pointer hover:brightness-95 transition-all"
+                             onclick="handleNotifAction('${n.id}')">
+                            <i class="fa-solid ${meta.icon} ${iconMap[meta.priority] || 'text-slate-500'} mt-0.5 w-4 text-center flex-shrink-0"></i>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">${n.message}</p>
+                                <p class="text-xs text-slate-500 mt-0.5 truncate">${n.detail}</p>
+                            </div>
+                            <span class="flex-shrink-0 text-xs font-bold text-blue-500 whitespace-nowrap">${n.actionLabel} →</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : `
+            <div class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>
+                <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Semua projek dalam keadaan baik. Tiada tindakan segera diperlukan.</p>
+            </div>`}
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold mb-4 text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wider">Status Quotation</h3>
+                    <div class="h-64"><canvas id="chartQuotation"></canvas></div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold mb-4 text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wider">Kesihatan Pembayaran</h3>
+                    <div class="h-64"><canvas id="chartFinance"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Notification Timeline Section -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mb-6">
+                <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-bell mr-2"></i>Ringkasan Notifikasi Aktif</h3>
+                    <button onclick="toggleNotifPanel()" class="text-xs text-blue-500 hover:underline">Lihat Semua →</button>
+                </div>
+                <div class="p-4">
+                    ${renderNotifSummaryTimeline()}
+                </div>
+            </div>
+
+            <!-- Client Portfolio -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-users mr-2"></i>Ringkasan Klien</h3>
+                    <span class="text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400 px-2 py-1 rounded-md">${clientArray.length} Klien</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left whitespace-nowrap">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 dark:bg-slate-900/50 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                            <tr>
+                                <th class="px-5 py-3">Klien</th>
+                                <th class="px-5 py-3 text-center">Jumlah Projek</th>
+                                <th class="px-5 py-3 text-center">Projek Lulus</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${clientArray.map(c => `
+                            <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                <td class="px-5 py-3 font-semibold text-slate-800 dark:text-slate-200">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-eng-blue/10 text-eng-blue dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center font-bold text-xs uppercase">${c.company.substring(0, 2)}</div>
+                                        ${c.company}
+                                    </div>
+                                </td>
+                                <td class="px-5 py-3 text-center"><span class="bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 py-1 px-3 rounded-full text-xs font-bold">${c.count}</span></td>
+                                <td class="px-5 py-3 text-center"><span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 py-1 px-3 rounded-full text-xs font-bold">${c.active}</span></td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        setTimeout(() => initCharts(), 100);
+    };
+
+    const renderNotifSummaryTimeline = () => {
+        if (notifications.length === 0) {
+            return `<p class="text-sm text-slate-400 text-center py-4">Tiada notifikasi aktif.</p>`;
+        }
+        const cats = [
+            { key: 'operation', label: 'Operation', icon: 'fa-helmet-safety', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800' },
+            { key: 'claim',     label: 'Claim',     icon: 'fa-file-invoice-dollar', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800' },
+            { key: 'lod',       label: 'LOD Tracker', icon: 'fa-gavel', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/10', border: 'border-red-200 dark:border-red-800' },
+        ];
+        return `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${cats.map(cat => {
+                const catNotifs = notifications.filter(n => NOTIF_TYPES[n.type]?.category === cat.key);
+                const unreadCat = catNotifs.filter(n => !n.read).length;
+                return `
+                <div class="p-4 rounded-xl border ${cat.border} ${cat.bg}">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid ${cat.icon} ${cat.color}"></i>
+                            <span class="font-bold text-sm text-slate-700 dark:text-slate-200">${cat.label}</span>
+                        </div>
+                        ${unreadCat > 0 ? `<span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">${unreadCat}</span>` : '<span class="text-emerald-500 text-xs font-medium">✓ Clear</span>'}
+                    </div>
+                    <div class="space-y-2">
+                        ${catNotifs.length === 0 ? '<p class="text-xs text-slate-400">Tiada notifikasi.</p>' :
+                        catNotifs.slice(0, 3).map(n => `
+                            <div class="flex items-start gap-2 cursor-pointer" onclick="handleNotifAction('${n.id}')">
+                                <span class="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${n.read ? 'bg-slate-300' : 'bg-red-500'}"></span>
+                                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed hover:text-slate-900 dark:hover:text-slate-200 transition-colors">${n.message.split('—')[1]?.trim() || n.message}</p>
+                            </div>`).join('')}
+                        ${catNotifs.length > 3 ? `<button onclick="toggleNotifPanel(); filterNotifs('${cat.key}')" class="text-xs text-blue-500 hover:underline mt-1">+${catNotifs.length - 3} lagi</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+    };
+
+    const createKPICard = (title, value, icon, borderClass) => `
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-t-4 ${borderClass}">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">${title}</p>
+                    <h4 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">${value}</h4>
+                </div>
+                <div class="p-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-slate-400"><i class="fa-solid ${icon}"></i></div>
+            </div>
+        </div>`;
+
+    const initCharts = () => {
+        const colors = { blue: '#118DFF', teal: '#12239E', orange: '#E66C37', green: '#00B050', red: '#E044A7', gray: '#cbd5e1' };
+        const textColor = document.documentElement.classList.contains('dark') ? '#94a3b8' : '#475569';
+        Chart.defaults.color = textColor;
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+
+        const statusCounts = { Pending: 0, Approved: 0, Cancel: 0 };
+        projects.forEach(p => statusCounts[p.status_quotation] = (statusCounts[p.status_quotation] || 0) + 1);
+
+        const paymentCounts = { Paid: 0, Pending: 0, Outstanding: 0 };
+        projects.forEach(p => { if (p.payment_status) paymentCounts[p.payment_status] = (paymentCounts[p.payment_status] || 0) + 1; });
+
+        const ctx1 = document.getElementById('chartQuotation').getContext('2d');
+        if (chartInstances.qChart) chartInstances.qChart.destroy();
+        chartInstances.qChart = new Chart(ctx1, {
+            type: 'bar',
+            data: { labels: ['Pending', 'Approved', 'Cancel'], datasets: [{ label: 'Bilangan', data: [statusCounts.Pending, statusCounts.Approved, statusCounts.Cancel], backgroundColor: [colors.orange, colors.blue, colors.gray], borderRadius: 4 }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: textColor + '20' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+        });
+
+        const ctx2 = document.getElementById('chartFinance').getContext('2d');
+        if (chartInstances.fChart) chartInstances.fChart.destroy();
+        chartInstances.fChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: { labels: ['Paid', 'Pending', 'Outstanding (LOD)'], datasets: [{ data: [paymentCounts.Paid, paymentCounts.Pending, paymentCounts.Outstanding], backgroundColor: [colors.green, colors.orange, colors.red], borderWidth: 0, cutout: '70%' }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    };
+
+    // ==========================================
+    // TABLE RENDER
+    // ==========================================
+    const renderTable = (phase, container) => {
+        let data = [], headers = [], rowBuilder = null, phaseTitle = '';
+        const canAdd = phase === 'commercial';
+
+        if (phase === 'commercial') {
+            phaseTitle = "Fasa 1: Commercial / Quotation";
+            data = projects;
+            headers = ['Project ID', 'Syarikat', 'Tarikh Mohon', 'Quotation No', 'Nilai (RM)', 'Status', 'Tindakan'];
+            rowBuilder = (p) => `
+                <td class="px-4 py-3 font-semibold text-eng-blue dark:text-blue-400">${p.id}</td>
+                <td class="px-4 py-3">${p.company}</td>
+                <td class="px-4 py-3">${p.date_request}</td>
+                <td class="px-4 py-3">${p.quotation_no || '-'}</td>
+                <td class="px-4 py-3 font-medium">${formatRM(p.quotation_amount)}</td>
+                <td class="px-4 py-3">${formatStatusBadge(p.status_quotation)}</td>`;
+        } else if (phase === 'operation') {
+            phaseTitle = "Fasa 2: Operation";
+            data = projects.filter(p => p.status_quotation === 'Approved');
+            headers = ['Project ID', 'Syarikat', 'Tarikh Proceed', 'Mula Kerja', 'GWR', 'Full Report', 'Status', 'Tindakan'];
+            rowBuilder = (p) => {
+                const hasNotif = notifications.some(n => !n.read && n.projectId === p.id && NOTIF_TYPES[n.type]?.category === 'operation');
+                return `
+                <td class="px-4 py-3 font-semibold text-eng-blue dark:text-blue-400">
+                    ${p.id}${hasNotif ? ' <span class="inline-block w-2 h-2 rounded-full bg-red-500 align-middle"></span>' : ''}
+                </td>
+                <td class="px-4 py-3 text-sm">${p.company}</td>
+                <td class="px-4 py-3">${p.date_proceed || '-'}</td>
+                <td class="px-4 py-3">${p.date_start_job || '<span class="text-amber-500 text-xs font-medium">⚠ Belum Set</span>'}</td>
+                <td class="px-4 py-3">${p.gwr_submitted === 'Yes' ? `<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-check mr-1"></i>${p.gwr_date}</span>` : '<span class="text-slate-400 text-xs">Belum</span>'}</td>
+                <td class="px-4 py-3">${p.full_report_submitted === 'Yes' ? `<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-check mr-1"></i>${p.full_report_date}</span>` : '<span class="text-slate-400 text-xs">Belum</span>'}</td>
+                <td class="px-4 py-3"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md dark:bg-blue-900/30 dark:text-blue-300 font-medium">${p.status_job || 'Pending'}</span></td>`;
+            };
+        } else if (phase === 'claim') {
+            phaseTitle = "Fasa 3: Claim / Kewangan";
+            data = projects.filter(p => p.full_report_submitted === 'Yes');
+            headers = ['Project ID', 'Syarikat', 'Report Date', 'Invoice No', 'Due Date', 'Status Bayaran', 'Tindakan'];
+            rowBuilder = (p) => {
+                const hasNotif = notifications.some(n => !n.read && n.projectId === p.id && NOTIF_TYPES[n.type]?.category === 'claim');
+                return `
+                <td class="px-4 py-3 font-semibold text-eng-blue dark:text-blue-400">
+                    ${p.id}${hasNotif ? ' <span class="inline-block w-2 h-2 rounded-full bg-red-500 align-middle"></span>' : ''}
+                </td>
+                <td class="px-4 py-3 text-sm">${p.company}</td>
+                <td class="px-4 py-3">${p.full_report_date}</td>
+                <td class="px-4 py-3 font-mono">${p.invoice_no || '<span class="text-red-400 text-sm font-semibold">⚠ Sila Jana</span>'}</td>
+                <td class="px-4 py-3 font-medium ${p.payment_status === 'Outstanding' ? 'text-red-500' : ''}">${p.payment_due_date || '-'}</td>
+                <td class="px-4 py-3">${formatStatusBadge(p.payment_status || 'Pending')}</td>`;
+            };
+        } else if (phase === 'lod') {
+            phaseTitle = "Fasa 4: LOD Tracker";
+            data = projects.filter(p => p.payment_status === 'Outstanding');
+            headers = ['Project ID', 'Syarikat', 'Overdue', 'Nilai (RM)', 'Reminder', 'CTOS', 'Status Kes', 'Tindakan'];
+            rowBuilder = (p) => `
+                <td class="px-4 py-3 font-semibold text-red-500">${p.id}</td>
+                <td class="px-4 py-3 text-sm">${p.company}</td>
+                <td class="px-4 py-3"><span class="font-bold text-red-600 dark:text-red-400">${p.overdue_days} Hari</span></td>
+                <td class="px-4 py-3 font-medium">${formatRM(p.quotation_amount)}</td>
+                <td class="px-4 py-3">${p.lod_reminder_date || `<span class="text-amber-500 text-xs">Sasaran: ${p.lod_reminder_sent || '-'}</span>`}</td>
+                <td class="px-4 py-3">${formatStatusBadge(p.ctos_action || 'Pending')}</td>
+                <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-md dark:bg-amber-900/30 dark:text-amber-300 font-medium uppercase">${p.case_status || 'Open'}</span></td>`;
+        }
+
+        // Notif banner for each phase
+        const phaseNotifs = notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.category === phase);
+        const notifBanner = phaseNotifs.length > 0 ? `
+            <div class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm font-bold text-amber-800 dark:text-amber-300"><i class="fa-solid fa-bell mr-2"></i>${phaseNotifs.length} Notifikasi Memerlukan Perhatian</p>
+                    <button onclick="filterNotifs('${phase}'); toggleNotifPanel()" class="text-xs text-blue-500 hover:underline">Lihat Semua →</button>
+                </div>
+                <div class="space-y-1.5">
+                    ${phaseNotifs.slice(0, 3).map(n => `
+                        <div class="flex items-center gap-2 cursor-pointer" onclick="handleNotifAction('${n.id}')">
+                            <i class="fa-solid ${NOTIF_TYPES[n.type]?.icon || 'fa-circle'} text-amber-500 text-xs w-4 text-center"></i>
+                            <p class="text-xs text-amber-700 dark:text-amber-400 hover:underline">${n.message}</p>
+                        </div>`).join('')}
+                    ${phaseNotifs.length > 3 ? `<p class="text-xs text-amber-600 dark:text-amber-500 ml-6">...dan ${phaseNotifs.length - 3} lagi</p>` : ''}
+                </div>
+            </div>` : '';
+
+        container.innerHTML = `
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">${phaseTitle}</h2>
+                ${canAdd ? `<button onclick="openForm('commercial', null)" class="bg-eng-blue hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors"><i class="fa-solid fa-plus mr-2"></i>Projek Baru</button>` : ''}
+            </div>
+            ${notifBanner}
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left whitespace-nowrap">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 dark:bg-slate-900/50 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                            <tr>${headers.map(h => `<th class="px-4 py-3">${h}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            ${data.length === 0 ? `<tr><td colspan="${headers.length}" class="px-4 py-8 text-center text-slate-400">Tiada rekod untuk fasa ini.</td></tr>` : ''}
+                            ${data.map(p => `
+                                <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                    ${rowBuilder(p)}
+                                    <td class="px-4 py-3">
+                                        <button onclick="openForm('${phase}', '${p.id}')" class="text-blue-500 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/20 dark:hover:bg-blue-900/50 px-3 py-1.5 rounded-md transition-colors text-xs font-semibold">
+                                            <i class="fa-solid fa-pen-to-square mr-1"></i>Kemaskini
+                                        </button>
+                                    </td>
+                                </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+    };
+
+    const formatStatusBadge = (status) => {
+        const map = {
+            'Pending':     'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+            'Approved':    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+            'Cancel':      'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
+            'Paid':        'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+            'Outstanding': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'Initiated':   'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+            'Completed':   'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+        };
+        return `<span class="text-xs px-2.5 py-1 rounded-full font-medium uppercase tracking-wide ${map[status] || 'bg-slate-100 text-slate-800'}">${status}</span>`;
+    };
+
+    // ==========================================
+    // FORM LOGIC
+    // ==========================================
+    const openForm = (phase, id) => {
+        currentEditingId = id;
+        const p = id ? projects.find(x => x.id === id) : { id: generateId(), date_request: getToday(), status_quotation: 'Pending' };
+        document.getElementById('modal-title').innerText = id ? `Kemaskini: ${id}` : `Daftar Projek Baru`;
+
+        const createGroup = (label, fid, type, val, opts = {}) => {
+            const attrs = [];
+            if (opts.readonly) attrs.push('readonly');
+            if (opts.required) attrs.push('required');
+            const base = "w-full text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2.5 focus:ring-2 focus:ring-eng-blue focus:border-transparent outline-none transition-shadow";
+            let inp = '';
+            if (type === 'select') {
+                inp = `<select id="${fid}" class="${base}" ${attrs.join(' ')}>
+                    <option value="">-- Pilih --</option>
+                    ${opts.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+                </select>`;
+            } else if (type === 'textarea') {
+                inp = `<textarea id="${fid}" rows="3" class="${base}" ${attrs.join(' ')}>${val || ''}</textarea>`;
+            } else {
+                inp = `<input type="${type}" id="${fid}" value="${val || ''}" class="${base}" ${attrs.join(' ')}>`;
+            }
+            return `<div class="mb-4">
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide">${label}</label>
+                ${inp}
+                ${opts.hint ? `<p class="mt-1 text-[10px] text-slate-500">${opts.hint}</p>` : ''}
+            </div>`;
+        };
+
+        let formHTML = '';
+        if (phase === 'commercial') {
+            formHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+                ${createGroup('Project ID (Auto)', 'f_id', 'text', p.id, { readonly: true })}
+                ${createGroup('Syarikat / Klien', 'f_company', 'text', p.company)}
+                ${createGroup('Tarikh Request', 'f_date_request', 'date', p.date_request)}
+                ${createGroup('Quotation No', 'f_quotation_no', 'text', p.quotation_no)}
+                ${createGroup('Quotation Amount (RM)', 'f_quotation_amount', 'number', p.quotation_amount)}
+                ${createGroup('Status Quotation', 'f_status_quotation', 'select', p.status_quotation, { options: ['Pending', 'Cancel', 'Approved'] })}
+                ${createGroup('Tarikh Proceed (Jika Approved)', 'f_date_proceed', 'date', p.date_proceed, { hint: '⚡ Jika Approved, notifikasi Operation akan dijana secara automatik.' })}
+            </div>`;
+        } else if (phase === 'operation') {
+            formHTML = `
+                <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mb-4 border border-slate-200 dark:border-slate-700">
+                    <p class="text-xs text-slate-500">Projek: <span class="font-bold text-eng-blue">${p.id}</span> | ${p.company} | Proceed: <span class="font-bold">${p.date_proceed}</span></p>
+                </div>
+                <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-3 pb-1 border-b border-slate-200 dark:border-slate-700">Dokumen Pra-Kerja</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4">
+                    ${createGroup('MOS', 'f_mos_ready', 'select', p.mos_ready, { options: ['Sedia', 'Belum', 'N/A'] })}
+                    ${createGroup('JSA', 'f_jsa_ready', 'select', p.jsa_ready, { options: ['Sedia', 'Belum', 'N/A'] })}
+                    ${createGroup('PTW', 'f_ptw_ready', 'select', p.ptw_ready, { options: ['Sedia', 'Belum', 'N/A'], hint: '⚠ Wajib Sedia sebelum mula kerja.' })}
+                </div>
+                <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-3 mt-1 pb-1 border-b border-slate-200 dark:border-slate-700">Pelaksanaan Kerja</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+                    ${createGroup('Tarikh Mula Kerja', 'f_date_start_job', 'date', p.date_start_job)}
+                    ${createGroup('Tarikh Siap Kerja', 'f_date_completed_job', 'date', p.date_completed_job)}
+                    ${createGroup('GWR Submitted?', 'f_gwr_submitted', 'select', p.gwr_submitted, { options: ['Yes', 'No'], hint: '⚡ Jika Yes, notifikasi Claim dijana.' })}
+                    ${createGroup('GWR Date', 'f_gwr_date', 'date', p.gwr_date)}
+                    ${createGroup('Full Report Submitted?', 'f_full_report_submitted', 'select', p.full_report_submitted, { options: ['Yes', 'No'], hint: '⚡ Jika Yes, projek masuk ke fasa Claim.' })}
+                    ${createGroup('Full Report Date', 'f_full_report_date', 'date', p.full_report_date)}
+                </div>`;
+        } else if (phase === 'claim') {
+            formHTML = `
+                <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg mb-4 border border-slate-200 dark:border-slate-700">
+                    <p class="text-xs text-slate-500">Projek: <span class="font-bold text-eng-blue">${p.id}</span> | ${p.company} | Full Report: <span class="font-bold">${p.full_report_date}</span></p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+                    ${createGroup('Invoice No', 'f_invoice_no', 'text', p.invoice_no)}
+                    ${createGroup('Invoice Date', 'f_invoice_date', 'date', p.invoice_date, { hint: '⚡ Tukar tarikh ini untuk auto-kira Follow Up & Due Date.' })}
+                    ${createGroup('Presentation Date (Optional)', 'f_presentation_date', 'date', p.presentation_date)}
+                    ${createGroup('Payment Status', 'f_payment_status', 'select', p.payment_status || 'Pending', { options: ['Pending', 'Paid', 'Outstanding'], hint: '⚡ Jika Outstanding, notifikasi LOD Tracker dijana.' })}
+                </div>
+                <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-3 mt-1 pb-1 border-b border-slate-200 dark:border-slate-700">Jadual Penjejakan Automatik</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-2">
+                    ${createGroup('Follow Up 1 (+7 Hari)', 'f_followup_1', 'date', p.followup_1, { readonly: true })}
+                    ${createGroup('Follow Up 2 (+14 Hari)', 'f_followup_2', 'date', p.followup_2, { readonly: true })}
+                    ${createGroup('Follow Up 3 (+21 Hari)', 'f_followup_3', 'date', p.followup_3, { readonly: true })}
+                    ${createGroup('Payment Due (+30 Hari)', 'f_payment_due_date', 'date', p.payment_due_date, { readonly: true })}
+                </div>`;
+        } else if (phase === 'lod') {
+            formHTML = `
+                <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-4 flex justify-between items-center">
+                    <p class="text-xs text-red-800 dark:text-red-300">${p.id} — ${p.company}</p>
+                    <span class="text-xs font-bold bg-red-600 text-white px-3 py-1 rounded-full">Overdue: ${p.overdue_days || '-'} Hari</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+                    ${createGroup('LOD Reminder (Due+7) [Auto]', 'f_lod_reminder_sent', 'date', p.lod_reminder_sent, { readonly: true })}
+                    ${createGroup('Tarikh Sebenar Reminder Hantar', 'f_lod_reminder_date', 'date', p.lod_reminder_date)}
+                    ${createGroup('LOD Issue (Due+14) [Auto]', 'f_lod_issue', 'date', p.lod_issue, { readonly: true })}
+                    ${createGroup('Tarikh Sebenar LOD Dikeluarkan', 'f_lod_issue_date', 'date', p.lod_issue_date)}
+                    ${createGroup('CTOS Action', 'f_ctos_action', 'select', p.ctos_action, { options: ['Pending', 'Initiated', 'Completed'] })}
+                    ${createGroup('Legal Action', 'f_legal_action', 'select', p.legal_action, { options: ['Pending', 'Initiated', 'Completed'] })}
+                    ${createGroup('Case Status', 'f_case_status', 'select', p.case_status, { options: ['Open', 'KIV', 'Closed'] })}
+                </div>
+                ${createGroup('Remarks / Nota Kes', 'f_remark', 'textarea', p.remark)}`;
+        }
+
+        document.getElementById('modal-body').innerHTML = formHTML;
+        document.getElementById('modal-backdrop').classList.remove('hidden');
+        document.getElementById('modal-backdrop').classList.add('flex');
+        attachFormListeners(phase);
+    };
+
+    const attachFormListeners = (phase) => {
+        if (phase === 'commercial') {
+            const statusEl = document.getElementById('f_status_quotation');
+            const proceedEl = document.getElementById('f_date_proceed');
+            statusEl.addEventListener('change', e => {
+                if (e.target.value === 'Approved') proceedEl.value = getToday();
+                else proceedEl.value = '';
+            });
+        }
+        if (phase === 'operation') {
+            const gwrSel = document.getElementById('f_gwr_submitted');
+            const gwrDate = document.getElementById('f_gwr_date');
+            const repSel = document.getElementById('f_full_report_submitted');
+            const repDate = document.getElementById('f_full_report_date');
+            gwrSel.addEventListener('change', e => { gwrDate.value = e.target.value === 'Yes' ? getToday() : ''; });
+            repSel.addEventListener('change', e => { repDate.value = e.target.value === 'Yes' ? getToday() : ''; });
+        }
+        if (phase === 'claim') {
+            const invDate = document.getElementById('f_invoice_date');
+            invDate.addEventListener('change', e => {
+                const d = e.target.value;
+                document.getElementById('f_followup_1').value = addDays(d, 7);
+                document.getElementById('f_followup_2').value = addDays(d, 14);
+                document.getElementById('f_followup_3').value = addDays(d, 21);
+                document.getElementById('f_payment_due_date').value = addDays(d, 30);
+            });
+        }
+    };
+
+    const saveForm = () => {
+        const id = currentEditingId || document.getElementById('f_id')?.value;
+        if (!id) return;
+        let projIndex = projects.findIndex(p => p.id === id);
+        let p = projIndex >= 0 ? { ...projects[projIndex] } : { id };
+
+        // Snapshot before save for notif diffing
+        const beforeStatus = { ...p };
+
+        document.getElementById('modal-body').querySelectorAll('input, select, textarea').forEach(input => {
+            const key = input.id.replace('f_', '');
+            p[key] = input.value;
+        });
+
+        if (projIndex >= 0) projects[projIndex] = p;
+        else projects.push(p);
+
+        closeModal();
+
+        // Fire toast if key status changed
+        if (beforeStatus.status_quotation !== 'Approved' && p.status_quotation === 'Approved') {
+            showToast(`✅ ${p.id} diluluskan! Notifikasi Operation dijana.`, 'success');
+        }
+        if (beforeStatus.gwr_submitted !== 'Yes' && p.gwr_submitted === 'Yes') {
+            showToast(`📋 GWR ${p.id} dihantar. Sediakan Full Report.`, 'info');
+        }
+        if (beforeStatus.full_report_submitted !== 'Yes' && p.full_report_submitted === 'Yes') {
+            showToast(`✅ Full Report ${p.id} selesai! Buka Claim untuk jana invoice.`, 'success');
+        }
+        if (p.payment_status === 'Outstanding' && beforeStatus.payment_status !== 'Outstanding') {
+            showToast(`⚠ ${p.id} kini TERTUNGGAK! LOD Tracker dikemas kini.`, 'urgent');
+        }
+        if (p.payment_status === 'Paid' && beforeStatus.payment_status !== 'Paid') {
+            showToast(`💰 ${p.id} telah dibayar! Terima kasih.`, 'success');
+        }
+
+        switchView(currentView);
+    };
+
+    const closeModal = () => {
+        document.getElementById('modal-backdrop').classList.add('hidden');
+        document.getElementById('modal-backdrop').classList.remove('flex');
+        currentEditingId = null;
+    };
+
+    // ==========================================
+    // THEME
+    // ==========================================
+    const toggleTheme = () => {
+        document.documentElement.classList.toggle('dark');
+        if (chartInstances.qChart) initCharts();
+    };
+
+    // Close notif panel on outside click
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('notif-panel');
+        const btn = document.getElementById('notif-btn');
+        if (notifPanelOpen && !panel.contains(e.target) && !btn.contains(e.target)) {
+            toggleNotifPanel();
+        }
+    });
+
+    // ==========================================
+    // PWA: SERVICE WORKER REGISTRATION
+    // ==========================================
+    // NOTA: service worker hanya boleh didaftar bila app dibuka dari https://
+    // atau localhost. Bukaan terus dari fail (file://) akan gagal senyap -
+    // ini normal, app tetap berfungsi penuh sebagai laman web biasa.
+    let swRegistration = null;
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then((reg) => { swRegistration = reg; })
+                .catch((err) => { console.log('Service worker tidak berdaftar (normal jika dibuka dari fail terus):', err.message); });
+        });
+    }
+
+    // ==========================================
+    // PWA: INSTALL PROMPT (Android / Desktop Chrome/Edge)
+    // ==========================================
+    let deferredInstallPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        document.getElementById('install-btn').classList.remove('hidden');
+        document.getElementById('install-btn').classList.add('flex');
+        document.getElementById('install-btn-desktop').classList.remove('hidden');
+        document.getElementById('install-btn-desktop').classList.add('flex');
+    });
+
+    const triggerInstall = async () => {
+        if (!deferredInstallPrompt) {
+            showToast('App sudah dipasang atau pelayar tidak menyokong install automatik.', 'info');
+            return;
+        }
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+            showToast('✅ VoltTrack berjaya dipasang di peranti anda!', 'success');
+        }
+        deferredInstallPrompt = null;
+        document.getElementById('install-btn').classList.add('hidden');
+        document.getElementById('install-btn-desktop').classList.add('hidden');
+    };
+
+    window.addEventListener('appinstalled', () => {
+        document.getElementById('install-btn').classList.add('hidden');
+        document.getElementById('install-btn-desktop').classList.add('hidden');
+        document.getElementById('ios-install-banner').classList.add('hidden');
+    });
+
+    // --- iOS Safari: tiada beforeinstallprompt, papar arahan manual ---
+    const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isInStandaloneMode = () => ('standalone' in window.navigator) && window.navigator.standalone;
+
+    const dismissIosBanner = () => {
+        document.getElementById('ios-install-banner').classList.add('hidden');
+        try { localStorage.setItem('volttrack_ios_banner_dismissed', '1'); } catch (e) {}
+    };
+
+    const maybeShowIosBanner = () => {
+        if (isIos() && !isInStandaloneMode()) {
+            let dismissed = false;
+            try { dismissed = localStorage.getItem('volttrack_ios_banner_dismissed') === '1'; } catch (e) {}
+            if (!dismissed) {
+                setTimeout(() => document.getElementById('ios-install-banner').classList.remove('hidden'), 1500);
+            }
+        }
+    };
+
+    // ==========================================
+    // NOTIFICATION PERMISSION + LOCAL NOTIFICATION DISPATCH
+    // ==========================================
+    const updateNotifPermissionUI = () => {
+        const btn = document.getElementById('notif-permission-btn');
+        if (!('Notification' in window)) { btn.classList.add('hidden'); return; }
+        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+            btn.classList.add('hidden');
+        } else {
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+        }
+    };
+
+    const requestNotifPermission = async () => {
+        if (!('Notification' in window)) {
+            showToast('Pelayar ini tidak menyokong notifikasi.', 'info');
+            return;
+        }
+        const result = await Notification.requestPermission();
+        updateNotifPermissionUI();
+        if (result === 'granted') {
+            showToast('🔔 Notifikasi diaktifkan! Anda akan dimaklumkan bila app dibuka.', 'success');
+            dispatchLocalNotification('VoltTrack', 'Notifikasi telah diaktifkan untuk peranti ini.', 'success');
+        } else if (result === 'denied') {
+            showToast('Notifikasi ditolak. Anda boleh ubah semula di tetapan pelayar.', 'warning');
+        }
+    };
+
+    // Hantar local notification (melalui Service Worker jika ada, atau terus jika tidak)
+    // PENTING: ini local notification, bukan push jarak jauh. Ia hanya berfungsi
+    // bila tab/app ini dibuka aktif atau baru sahaja di background (bukan ditutup total).
+    const dispatchLocalNotification = (title, body, urgency = 'info', tag = null) => {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+        if (swRegistration && swRegistration.active) {
+            swRegistration.active.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                payload: { title, body, urgency, tag: tag || `vt-${Date.now()}` }
+            });
+        } else if (swRegistration) {
+            swRegistration.showNotification(title, {
+                body, icon: './icons/icon-192.png', badge: './icons/icon-192.png',
+                tag: tag || `vt-${Date.now()}`,
+            });
+        } else {
+            // Fallback tanpa service worker (terus guna Notification API)
+            new Notification(title, { body, icon: './icons/icon-192.png' });
+        }
+    };
+
+    // Track notif yang sudah pernah dihantar sebagai OS notification (elak spam berulang)
+    let dispatchedNotifKeys = new Set();
+    const dispatchNewUrgentNotifications = () => {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const toDispatch = notifications.filter(n => {
+            const key = `${n.type}-${n.projectId}`;
+            const isUrgentOrWarning = NOTIF_TYPES[n.type]?.priority === 'urgent' || NOTIF_TYPES[n.type]?.priority === 'warning';
+            return !n.read && isUrgentOrWarning && !dispatchedNotifKeys.has(key);
+        });
+        toDispatch.forEach(n => {
+            const key = `${n.type}-${n.projectId}`;
+            dispatchedNotifKeys.add(key);
+            dispatchLocalNotification('VoltTrack — ' + (n.projectId || ''), n.message, NOTIF_TYPES[n.type]?.priority, key);
+        });
+    };
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('modal-save').addEventListener('click', saveForm);
+    document.getElementById('theme-toggle-desktop')?.addEventListener('click', toggleTheme);
+    document.getElementById('theme-toggle-mobile').addEventListener('click', toggleTheme);
+
+    window.onload = () => {
+        autoUpdateLogic();
+        initNav();
+        switchView('dashboard');
+        updateNotifPermissionUI();
+        maybeShowIosBanner();
+        // Show initial urgent toast
+        const urgentFirst = notifications.find(n => NOTIF_TYPES[n.type]?.priority === 'urgent');
+        if (urgentFirst) {
+            setTimeout(() => showToast(urgentFirst.message, 'urgent'), 800);
+        }
+        // Hantar local OS notification untuk semua urgent/warning sedia ada (jika permission granted)
+        setTimeout(() => dispatchNewUrgentNotifications(), 1200);
+    };
+    </script>
+</body>
+</html>
