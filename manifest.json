@@ -1,0 +1,32 @@
+{
+  "name": "VoltTrack - Engineering Monitor",
+  "short_name": "VoltTrack",
+  "description": "Sistem Pemantauan Kejuruteraan Elektrikal - Commercial, Operation, Claim & LOD Tracker",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#005b96",
+  "lang": "ms",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
