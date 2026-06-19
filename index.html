@@ -104,20 +104,28 @@
         .fa-fallback i.fa-file-check::before { content: '📋'; }
         .fa-fallback i.fa-download::before { content: '⬇️'; }
         .fa-fallback i.fa-mobile-screen-button::before { content: '📱'; }
+        .fa-fallback i.fa-ellipsis-vertical::before { content: '⋮'; }
+        .fa-fallback i.fa-volume-high::before { content: '🔊'; }
+        .fa-fallback i.fa-volume-xmark::before { content: '🔇'; }
+        .fa-fallback i.fa-display::before { content: '🖥️'; }
+        .fa-fallback i.fa-mobile-screen::before { content: '📱'; }
+        .fa-fallback i.fa-desktop::before { content: '🖥️'; }
+        .fa-fallback i.fa-square-up-right::before { content: '⬆️'; }
+        .fa-fallback i.fa-gear::before { content: '⚙️'; }
 
         /* Notification panel */
-        #notif-panel {
+        #notif-panel, #settings-panel {
             transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
         }
-        #notif-panel.hidden { display: none; }
+        #notif-panel.hidden, #settings-panel.hidden { display: none; }
 
         /* Toast container */
         #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
         .toast { pointer-events: all; min-width: 280px; max-width: 360px; }
 
         /* Notif badge */
-        .notif-badge { 
-            position: absolute; top: -4px; right: -4px; 
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px;
             min-width: 18px; height: 18px; padding: 0 4px;
             background: #ef4444; color: white; font-size: 10px; font-weight: 700;
             border-radius: 9px; display: flex; align-items: center; justify-content: center;
@@ -139,12 +147,30 @@
         .notif-warning { border-left: 3px solid #f59e0b; }
         .notif-info { border-left: 3px solid #3b82f6; }
         .notif-success { border-left: 3px solid #10b981; }
+
+        /* ===== FORCED VIEW MODE (Desktop-First Design toggle) ===== */
+        /* Bila 'force-desktop' aktif pada <html>, paksa layout desktop walaupun skrin kecil */
+        html.force-desktop .force-desktop-show { display: flex !important; }
+        html.force-desktop .force-desktop-hide { display: none !important; }
+        html.force-desktop #content-area { padding: 1.5rem !important; padding-bottom: 1.5rem !important; }
+        html.force-desktop body { font-size: 14px; }
+        html.force-desktop main { min-width: 0; }
+
+        /* Bila 'force-mobile' aktif pada <html>, paksa layout mobile walaupun skrin besar */
+        html.force-mobile .force-mobile-hide { display: none !important; }
+        html.force-mobile .force-mobile-show { display: flex !important; }
+        html.force-mobile #content-area { padding: 1rem !important; padding-bottom: 6rem !important; }
+        html.force-mobile body { max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,0.08); }
+        html.force-mobile .grid-cols-2.md\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        html.force-mobile .grid-cols-1.lg\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+        html.force-mobile .grid-cols-1.md\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+        html.force-mobile .grid-cols-1.md\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 h-screen overflow-hidden flex flex-col md:flex-row transition-colors duration-200">
 
     <!-- Desktop Sidebar -->
-    <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-sm z-20">
+    <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-sm z-20 force-mobile-hide" id="desktop-sidebar">
         <div class="p-5 flex items-center gap-3 border-b border-slate-200 dark:border-slate-700">
             <div class="bg-eng-blue text-white p-2 rounded-lg"><i class="fa-solid fa-bolt"></i></div>
             <h1 class="font-bold text-lg leading-tight">VoltTrack<br><span class="text-xs text-slate-500 font-normal">Engineering Monitor</span></h1>
@@ -154,11 +180,17 @@
             <button id="install-btn-desktop" onclick="triggerInstall()" class="hidden items-center gap-3 w-full p-2 text-sm text-eng-blue dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium">
                 <i class="fa-solid fa-download w-4 text-center"></i> <span>Pasang sebagai App</span>
             </button>
-            <button id="notif-permission-btn" onclick="requestNotifPermission()" class="hidden items-center gap-3 w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors font-medium">
+            <button id="notif-permission-btn-desktop" onclick="requestNotifPermission()" class="hidden items-center gap-3 w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors font-medium">
                 <i class="fa-solid fa-bell w-4 text-center"></i> <span>Aktifkan Notifikasi</span>
             </button>
+            <button onclick="toggleSound()" class="flex items-center gap-3 w-full p-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <i class="fa-solid fa-volume-high w-4 text-center sound-toggle-icon"></i> <span class="sound-toggle-label">Bunyi: Hidup</span>
+            </button>
+            <button onclick="toggleViewMode()" class="flex items-center gap-3 w-full p-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <i class="fa-solid fa-display w-4 text-center view-mode-icon"></i> <span class="view-mode-label">Paparan: Auto</span>
+            </button>
             <button id="theme-toggle-desktop" class="flex items-center gap-3 w-full p-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                <i class="fa-solid fa-moon w-4 text-center"></i> <span>Tukar Tema</span>
+                <i class="fa-solid fa-moon w-4 text-center theme-toggle-icon"></i> <span>Tukar Tema</span>
             </button>
         </div>
     </aside>
@@ -167,11 +199,11 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden relative">
         <!-- Top Header -->
         <header class="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm z-20">
-            <div class="flex items-center gap-2 md:hidden">
+            <div class="flex items-center gap-2 force-mobile-show" id="mobile-header-brand">
                 <div class="bg-eng-blue text-white p-1.5 rounded-lg text-sm"><i class="fa-solid fa-bolt"></i></div>
                 <h1 class="font-bold text-md">VoltTrack</h1>
             </div>
-            <div class="hidden md:block text-sm text-slate-500 dark:text-slate-400" id="breadcrumb">Dashboard</div>
+            <div class="hidden md:block text-sm text-slate-500 dark:text-slate-400 force-mobile-hide" id="breadcrumb">Dashboard</div>
             <div class="flex items-center gap-2">
                 <!-- Install App Button (muncul bila browser sokong PWA install) -->
                 <button id="install-btn" onclick="triggerInstall()" class="hidden items-center gap-2 bg-eng-blue text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm">
@@ -185,11 +217,55 @@
                         <span id="notif-badge" class="notif-badge badge-pulse hidden">0</span>
                     </button>
                 </div>
-                <button id="theme-toggle-mobile" class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                    <i class="fa-solid fa-moon"></i>
-                </button>
+                <!-- Settings / More: SENTIASA NAMPAK di semua saiz skrin (desktop & mobile) -->
+                <div class="relative">
+                    <button id="settings-btn" onclick="toggleSettingsPanel()" class="relative p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+                        <span id="settings-attention-dot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full"></span>
+                    </button>
+                </div>
             </div>
         </header>
+
+        <!-- Settings Dropdown Panel: Install, Notifikasi, Bunyi, Paparan, Tema -->
+        <!-- Ini panel PALING PENTING untuk soalan "kat mana button aktifkan notifikasi di mobile" -->
+        <div id="settings-panel" class="hidden absolute top-14 right-4 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-40 notif-slide overflow-hidden">
+            <div class="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
+                <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1"><i class="fa-solid fa-gear mr-1"></i> Tetapan Pantas</p>
+            </div>
+            <div class="p-2">
+                <button id="install-btn-settings" onclick="triggerInstall()" class="hidden items-center gap-3 w-full p-2.5 text-sm text-eng-blue dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium">
+                    <i class="fa-solid fa-download w-4 text-center"></i> <span>Pasang sebagai App</span>
+                </button>
+                <button id="notif-permission-btn-settings" onclick="requestNotifPermission()" class="hidden items-center gap-3 w-full p-2.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors font-medium">
+                    <i class="fa-solid fa-bell w-4 text-center"></i> <span>Aktifkan Notifikasi</span>
+                </button>
+                <div id="notif-already-on-settings" class="hidden items-center gap-3 w-full p-2.5 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                    <i class="fa-solid fa-circle-check w-4 text-center"></i> <span>Notifikasi Aktif</span>
+                </div>
+                <button onclick="toggleSound()" class="flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <i class="fa-solid fa-volume-high w-4 text-center sound-toggle-icon"></i> <span class="sound-toggle-label">Bunyi: Hidup</span>
+                </button>
+                <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2.5 pt-1 pb-0.5">Mod Paparan</p>
+                <button onclick="setViewMode('auto')" class="view-mode-option flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" data-mode="auto">
+                    <i class="fa-solid fa-display w-4 text-center"></i> <span>Auto (Ikut Skrin)</span>
+                    <i class="fa-solid fa-check ml-auto text-eng-blue view-mode-check hidden"></i>
+                </button>
+                <button onclick="setViewMode('desktop')" class="view-mode-option flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" data-mode="desktop">
+                    <i class="fa-solid fa-desktop w-4 text-center"></i> <span>Paparan Desktop</span>
+                    <i class="fa-solid fa-check ml-auto text-eng-blue view-mode-check hidden"></i>
+                </button>
+                <button onclick="setViewMode('mobile')" class="view-mode-option flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" data-mode="mobile">
+                    <i class="fa-solid fa-mobile-screen w-4 text-center"></i> <span>Paparan Mobile</span>
+                    <i class="fa-solid fa-check ml-auto text-eng-blue view-mode-check hidden"></i>
+                </button>
+                <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+                <button id="theme-toggle-settings" class="flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <i class="fa-solid fa-moon w-4 text-center theme-toggle-icon"></i> <span>Tukar Tema</span>
+                </button>
+            </div>
+        </div>
 
         <!-- Notification Panel (Dropdown) -->
         <div id="notif-panel" class="hidden absolute top-14 right-0 md:right-4 w-full md:w-96 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-40 flex flex-col max-h-[75vh]">
@@ -242,7 +318,7 @@
     </main>
 
     <!-- Mobile Bottom Tab Bar -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around p-2 pb-safe z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" id="mobile-nav"></nav>
+    <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around p-2 pb-safe z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] force-mobile-show" id="mobile-nav"></nav>
 
     <!-- Modal -->
     <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
@@ -281,6 +357,76 @@
     let notifications = [];
     let notifFilter = 'all';
     let notifPanelOpen = false;
+    let settingsPanelOpen = false;
+    let soundEnabled = true;
+    let viewMode = 'auto'; // 'auto' | 'desktop' | 'mobile'
+
+    // ==========================================
+    // SOUND ENGINE (Web Audio API - tiada fail audio luar diperlukan)
+    // ==========================================
+    let audioCtx = null;
+    const getAudioCtx = () => {
+        if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            catch (e) { return null; }
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    };
+
+    // Mainkan bunyi nada pendek mengikut tahap kepentingan notifikasi:
+    // urgent  -> 2 beep pantas nada tinggi (perhatian lebih)
+    // warning -> 1 beep nada sederhana
+    // success -> 2 nada naik (ceria)
+    // info    -> 1 beep nada lembut
+    const playNotifSound = (urgency = 'info') => {
+        if (!soundEnabled) return;
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+
+        const beep = (freq, startTime, duration, gainPeak = 0.18) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            gain.gain.setValueAtTime(0.0001, startTime);
+            gain.gain.exponentialRampToValueAtTime(gainPeak, startTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.02);
+        };
+
+        const now = ctx.currentTime;
+        if (urgency === 'urgent') {
+            beep(880, now, 0.14, 0.22);
+            beep(880, now + 0.18, 0.14, 0.22);
+        } else if (urgency === 'warning') {
+            beep(660, now, 0.16, 0.18);
+        } else if (urgency === 'success') {
+            beep(523.25, now, 0.10, 0.15);
+            beep(783.99, now + 0.10, 0.14, 0.15);
+        } else {
+            beep(587.33, now, 0.14, 0.14);
+        }
+    };
+
+    const toggleSound = () => {
+        soundEnabled = !soundEnabled;
+        try { localStorage.setItem('volttrack_sound_enabled', soundEnabled ? '1' : '0'); } catch (e) {}
+        updateSoundToggleUI();
+        if (soundEnabled) playNotifSound('success');
+    };
+
+    const updateSoundToggleUI = () => {
+        document.querySelectorAll('.sound-toggle-icon').forEach(el => {
+            el.className = soundEnabled ? 'fa-solid fa-volume-high w-4 text-center sound-toggle-icon' : 'fa-solid fa-volume-xmark w-4 text-center sound-toggle-icon';
+        });
+        document.querySelectorAll('.sound-toggle-label').forEach(el => {
+            el.textContent = soundEnabled ? 'Bunyi: Hidup' : 'Bunyi: Senyap';
+        });
+    };
 
     const generateNotifId = () => `notif-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
 
@@ -433,9 +579,6 @@
         });
 
         // Merge: kekalkan read-status dari notif lama
-        const existingIds = new Set(notifications.map(n => `${n.type}-${n.projectId}`));
-        
-        // Build fresh list, preserve read status
         const readMap = {};
         notifications.forEach(n => { readMap[`${n.type}-${n.projectId}`] = n.read; });
 
@@ -474,7 +617,6 @@
             badge.classList.add('hidden');
             countBadge.classList.add('hidden');
         }
-        // Also update mobile nav notif indicators
         renderNotifPanel();
     };
 
@@ -482,8 +624,20 @@
         const panel = document.getElementById('notif-panel');
         notifPanelOpen = !notifPanelOpen;
         if (notifPanelOpen) {
+            if (settingsPanelOpen) toggleSettingsPanel();
             panel.classList.remove('hidden');
             renderNotifPanel();
+        } else {
+            panel.classList.add('hidden');
+        }
+    };
+
+    const toggleSettingsPanel = () => {
+        const panel = document.getElementById('settings-panel');
+        settingsPanelOpen = !settingsPanelOpen;
+        if (settingsPanelOpen) {
+            if (notifPanelOpen) toggleNotifPanel();
+            panel.classList.remove('hidden');
         } else {
             panel.classList.add('hidden');
         }
@@ -505,7 +659,6 @@
 
     const renderNotifPanel = () => {
         const list = document.getElementById('notif-list');
-        const empty = document.getElementById('notif-empty');
 
         const filtered = notifFilter === 'all'
             ? notifications
@@ -549,7 +702,7 @@
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${n.detail}</p>
                             <div class="flex items-center justify-between mt-2">
                                 <span class="text-[10px] text-slate-400 dark:text-slate-500">${n.timestamp}</span>
-                                <button onclick="event.stopPropagation(); handleNotifAction('${n.id}')" 
+                                <button onclick="event.stopPropagation(); handleNotifAction('${n.id}')"
                                         class="text-xs font-semibold text-eng-blue dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
                                     ${n.actionLabel} →
                                 </button>
@@ -591,8 +744,9 @@
         renderNotifPanel();
     };
 
-    // Show toast notification
+    // Show toast notification (dengan bunyi)
     const showToast = (message, type = 'info', actionLabel = null, actionFn = null) => {
+        playNotifSound(type);
         const toastId = `toast-${Date.now()}`;
         const colors = {
             urgent: 'bg-red-600 border-red-700',
@@ -719,9 +873,6 @@
         generateProjectNotifications();
         updateNotifBadge();
         checkNewNotifs();
-        if (typeof dispatchNewUrgentNotifications === 'function') {
-            try { dispatchNewUrgentNotifications(); } catch (e) { /* belum sedia lagi masa load awal */ }
-        }
     };
 
     // ==========================================
@@ -772,6 +923,7 @@
         autoUpdateLogic();
         initNav();
         if (notifPanelOpen) toggleNotifPanel();
+        if (settingsPanelOpen) toggleSettingsPanel();
         const content = document.getElementById('content-area');
         content.innerHTML = '';
         content.classList.remove('fade-in');
@@ -800,7 +952,6 @@
         });
         const clientArray = Object.keys(clientSummary).map(company => ({ company, ...clientSummary[company] })).sort((a, b) => b.count - a.count);
 
-        // Notif summary for dashboard
         const urgentNotifs = notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.priority === 'urgent');
         const warningNotifs = notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.priority === 'warning');
 
@@ -971,21 +1122,27 @@
         const paymentCounts = { Paid: 0, Pending: 0, Outstanding: 0 };
         projects.forEach(p => { if (p.payment_status) paymentCounts[p.payment_status] = (paymentCounts[p.payment_status] || 0) + 1; });
 
-        const ctx1 = document.getElementById('chartQuotation').getContext('2d');
-        if (chartInstances.qChart) chartInstances.qChart.destroy();
-        chartInstances.qChart = new Chart(ctx1, {
-            type: 'bar',
-            data: { labels: ['Pending', 'Approved', 'Cancel'], datasets: [{ label: 'Bilangan', data: [statusCounts.Pending, statusCounts.Approved, statusCounts.Cancel], backgroundColor: [colors.orange, colors.blue, colors.gray], borderRadius: 4 }] },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: textColor + '20' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
-        });
+        const ctx1El = document.getElementById('chartQuotation');
+        if (ctx1El) {
+            const ctx1 = ctx1El.getContext('2d');
+            if (chartInstances.qChart) chartInstances.qChart.destroy();
+            chartInstances.qChart = new Chart(ctx1, {
+                type: 'bar',
+                data: { labels: ['Pending', 'Approved', 'Cancel'], datasets: [{ label: 'Bilangan', data: [statusCounts.Pending, statusCounts.Approved, statusCounts.Cancel], backgroundColor: [colors.orange, colors.blue, colors.gray], borderRadius: 4 }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: textColor + '20' }, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+            });
+        }
 
-        const ctx2 = document.getElementById('chartFinance').getContext('2d');
-        if (chartInstances.fChart) chartInstances.fChart.destroy();
-        chartInstances.fChart = new Chart(ctx2, {
-            type: 'doughnut',
-            data: { labels: ['Paid', 'Pending', 'Outstanding (LOD)'], datasets: [{ data: [paymentCounts.Paid, paymentCounts.Pending, paymentCounts.Outstanding], backgroundColor: [colors.green, colors.orange, colors.red], borderWidth: 0, cutout: '70%' }] },
-            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-        });
+        const ctx2El = document.getElementById('chartFinance');
+        if (ctx2El) {
+            const ctx2 = ctx2El.getContext('2d');
+            if (chartInstances.fChart) chartInstances.fChart.destroy();
+            chartInstances.fChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: { labels: ['Paid', 'Pending', 'Outstanding (LOD)'], datasets: [{ data: [paymentCounts.Paid, paymentCounts.Pending, paymentCounts.Outstanding], backgroundColor: [colors.green, colors.orange, colors.red], borderWidth: 0, cutout: '70%' }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
     };
 
     // ==========================================
@@ -1053,7 +1210,6 @@
                 <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-md dark:bg-amber-900/30 dark:text-amber-300 font-medium uppercase">${p.case_status || 'Open'}</span></td>`;
         }
 
-        // Notif banner for each phase
         const phaseNotifs = notifications.filter(n => !n.read && NOTIF_TYPES[n.type]?.category === phase);
         const notifBanner = phaseNotifs.length > 0 ? `
             <div class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl">
@@ -1252,7 +1408,6 @@
         let projIndex = projects.findIndex(p => p.id === id);
         let p = projIndex >= 0 ? { ...projects[projIndex] } : { id };
 
-        // Snapshot before save for notif diffing
         const beforeStatus = { ...p };
 
         document.getElementById('modal-body').querySelectorAll('input, select, textarea').forEach(input => {
@@ -1265,7 +1420,6 @@
 
         closeModal();
 
-        // Fire toast if key status changed
         if (beforeStatus.status_quotation !== 'Approved' && p.status_quotation === 'Approved') {
             showToast(`✅ ${p.id} diluluskan! Notifikasi Operation dijana.`, 'success');
         }
@@ -1296,15 +1450,61 @@
     // ==========================================
     const toggleTheme = () => {
         document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('volttrack_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
         if (chartInstances.qChart) initCharts();
     };
 
-    // Close notif panel on outside click
+    // ==========================================
+    // VIEW MODE TOGGLE (Desktop View / Mobile View / Auto)
+    // ==========================================
+    const setViewMode = (mode) => {
+        viewMode = mode;
+        document.documentElement.classList.remove('force-desktop', 'force-mobile');
+        if (mode === 'desktop') document.documentElement.classList.add('force-desktop');
+        if (mode === 'mobile') document.documentElement.classList.add('force-mobile');
+        try { localStorage.setItem('volttrack_view_mode', mode); } catch (e) {}
+        updateViewModeUI();
+        showToast(
+            mode === 'auto' ? '🖥️ Paparan kembali ke Auto (ikut saiz skrin).' :
+            mode === 'desktop' ? '🖥️ Paparan dipaksa ke mod Desktop.' :
+            '📱 Paparan dipaksa ke mod Mobile.',
+            'info'
+        );
+        // Re-render current view supaya layout grid terpakai serta-merta
+        setTimeout(() => switchView(currentView), 50);
+    };
+
+    // Kitar pantas: Auto -> Desktop -> Mobile -> Auto (untuk butang ringkas di sidebar)
+    const toggleViewMode = () => {
+        const order = ['auto', 'desktop', 'mobile'];
+        const next = order[(order.indexOf(viewMode) + 1) % order.length];
+        setViewMode(next);
+    };
+
+    const updateViewModeUI = () => {
+        const labelMap = { auto: 'Paparan: Auto', desktop: 'Paparan: Desktop', mobile: 'Paparan: Mobile' };
+        const iconMap = { auto: 'fa-display', desktop: 'fa-desktop', mobile: 'fa-mobile-screen' };
+        document.querySelectorAll('.view-mode-label').forEach(el => { el.textContent = labelMap[viewMode]; });
+        document.querySelectorAll('.view-mode-icon').forEach(el => { el.className = `fa-solid ${iconMap[viewMode]} w-4 text-center view-mode-icon`; });
+        document.querySelectorAll('.view-mode-option').forEach(btn => {
+            const check = btn.querySelector('.view-mode-check');
+            if (btn.dataset.mode === viewMode) check.classList.remove('hidden');
+            else check.classList.add('hidden');
+        });
+    };
+
+    // Close dropdown panels bila klik luar
     document.addEventListener('click', (e) => {
-        const panel = document.getElementById('notif-panel');
-        const btn = document.getElementById('notif-btn');
-        if (notifPanelOpen && !panel.contains(e.target) && !btn.contains(e.target)) {
+        const notifPanel = document.getElementById('notif-panel');
+        const notifBtn = document.getElementById('notif-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsBtn = document.getElementById('settings-btn');
+
+        if (notifPanelOpen && !notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
             toggleNotifPanel();
+        }
+        if (settingsPanelOpen && !settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) {
+            toggleSettingsPanel();
         }
     });
 
@@ -1328,13 +1528,25 @@
     // ==========================================
     let deferredInstallPrompt = null;
 
+    const showInstallButtons = () => {
+        ['install-btn', 'install-btn-desktop', 'install-btn-settings'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+        });
+        const dot = document.getElementById('settings-attention-dot');
+        if (dot) dot.classList.remove('hidden');
+    };
+    const hideInstallButtons = () => {
+        ['install-btn', 'install-btn-desktop', 'install-btn-settings'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+        });
+    };
+
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
-        document.getElementById('install-btn').classList.remove('hidden');
-        document.getElementById('install-btn').classList.add('flex');
-        document.getElementById('install-btn-desktop').classList.remove('hidden');
-        document.getElementById('install-btn-desktop').classList.add('flex');
+        showInstallButtons();
     });
 
     const triggerInstall = async () => {
@@ -1348,13 +1560,11 @@
             showToast('✅ VoltTrack berjaya dipasang di peranti anda!', 'success');
         }
         deferredInstallPrompt = null;
-        document.getElementById('install-btn').classList.add('hidden');
-        document.getElementById('install-btn-desktop').classList.add('hidden');
+        hideInstallButtons();
     };
 
     window.addEventListener('appinstalled', () => {
-        document.getElementById('install-btn').classList.add('hidden');
-        document.getElementById('install-btn-desktop').classList.add('hidden');
+        hideInstallButtons();
         document.getElementById('ios-install-banner').classList.add('hidden');
     });
 
@@ -1381,14 +1591,30 @@
     // ==========================================
     // NOTIFICATION PERMISSION + LOCAL NOTIFICATION DISPATCH
     // ==========================================
+    // Ini bahagian yang jawab soalan "kat mana button aktifkan notifikasi di mobile".
+    // Butang ada di 3 tempat serentak: sidebar desktop, dan dalam panel "⋮ Tetapan"
+    // (panel ⋮ ini SENTIASA nampak di header — termasuk di skrin mobile yang kecil).
     const updateNotifPermissionUI = () => {
-        const btn = document.getElementById('notif-permission-btn');
-        if (!('Notification' in window)) { btn.classList.add('hidden'); return; }
-        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-            btn.classList.add('hidden');
+        const btnDesktop = document.getElementById('notif-permission-btn-desktop');
+        const btnSettings = document.getElementById('notif-permission-btn-settings');
+        const alreadyOn = document.getElementById('notif-already-on-settings');
+
+        if (!('Notification' in window)) {
+            [btnDesktop, btnSettings].forEach(b => b && b.classList.add('hidden'));
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            [btnDesktop, btnSettings].forEach(b => { if (b) { b.classList.add('hidden'); b.classList.remove('flex'); } });
+            if (alreadyOn) { alreadyOn.classList.remove('hidden'); alreadyOn.classList.add('flex'); }
+        } else if (Notification.permission === 'denied') {
+            [btnDesktop, btnSettings].forEach(b => b && b.classList.add('hidden'));
+            if (alreadyOn) alreadyOn.classList.add('hidden');
         } else {
-            btn.classList.remove('hidden');
-            btn.classList.add('flex');
+            [btnDesktop, btnSettings].forEach(b => { if (b) { b.classList.remove('hidden'); b.classList.add('flex'); } });
+            if (alreadyOn) alreadyOn.classList.add('hidden');
+            const dot = document.getElementById('settings-attention-dot');
+            if (dot) dot.classList.remove('hidden');
         }
     };
 
@@ -1410,8 +1636,11 @@
     // Hantar local notification (melalui Service Worker jika ada, atau terus jika tidak)
     // PENTING: ini local notification, bukan push jarak jauh. Ia hanya berfungsi
     // bila tab/app ini dibuka aktif atau baru sahaja di background (bukan ditutup total).
+    // Bunyi dimainkan serentak (Web Audio tone) selain bunyi sistem OS notification.
     const dispatchLocalNotification = (title, body, urgency = 'info', tag = null) => {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+        playNotifSound(urgency);
 
         if (swRegistration && swRegistration.active) {
             swRegistration.active.postMessage({
@@ -1422,9 +1651,9 @@
             swRegistration.showNotification(title, {
                 body, icon: './icons/icon-192.png', badge: './icons/icon-192.png',
                 tag: tag || `vt-${Date.now()}`,
+                vibrate: urgency === 'urgent' ? [200, 100, 200] : [100],
             });
         } else {
-            // Fallback tanpa service worker (terus guna Notification API)
             new Notification(title, { body, icon: './icons/icon-192.png' });
         }
     };
@@ -1446,26 +1675,49 @@
     };
 
     // ==========================================
+    // RESTORE SAVED PREFERENCES (theme, sound, view mode)
+    // ==========================================
+    const restorePreferences = () => {
+        try {
+            const savedTheme = localStorage.getItem('volttrack_theme');
+            if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+
+            const savedSound = localStorage.getItem('volttrack_sound_enabled');
+            if (savedSound !== null) soundEnabled = savedSound === '1';
+            updateSoundToggleUI();
+
+            const savedViewMode = localStorage.getItem('volttrack_view_mode');
+            if (savedViewMode && ['auto', 'desktop', 'mobile'].includes(savedViewMode)) {
+                viewMode = savedViewMode;
+                document.documentElement.classList.remove('force-desktop', 'force-mobile');
+                if (viewMode === 'desktop') document.documentElement.classList.add('force-desktop');
+                if (viewMode === 'mobile') document.documentElement.classList.add('force-mobile');
+            }
+            updateViewModeUI();
+        } catch (e) { /* localStorage tidak tersedia - guna default */ }
+    };
+
+    // ==========================================
     // INIT
     // ==========================================
     document.getElementById('modal-close').addEventListener('click', closeModal);
     document.getElementById('modal-cancel').addEventListener('click', closeModal);
     document.getElementById('modal-save').addEventListener('click', saveForm);
     document.getElementById('theme-toggle-desktop')?.addEventListener('click', toggleTheme);
-    document.getElementById('theme-toggle-mobile').addEventListener('click', toggleTheme);
+    document.getElementById('theme-toggle-settings')?.addEventListener('click', toggleTheme);
 
     window.onload = () => {
+        restorePreferences();
         autoUpdateLogic();
         initNav();
         switchView('dashboard');
         updateNotifPermissionUI();
         maybeShowIosBanner();
-        // Show initial urgent toast
+
         const urgentFirst = notifications.find(n => NOTIF_TYPES[n.type]?.priority === 'urgent');
         if (urgentFirst) {
             setTimeout(() => showToast(urgentFirst.message, 'urgent'), 800);
         }
-        // Hantar local OS notification untuk semua urgent/warning sedia ada (jika permission granted)
         setTimeout(() => dispatchNewUrgentNotifications(), 1200);
     };
     </script>
